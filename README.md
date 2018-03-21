@@ -81,13 +81,23 @@ fs20dimmer2mqtt pushes the current dimlevel of each received FS20 device to eith
 * `fs20dimmer/get/xxx`:
 fs20dimmer2mqtt listens to get requests here. You can request status updates for specific devices here. The response will be published as status.
 
+* `fs20dimmer/set/xxx`:
+Can be used for changing the dim level and sending the FS20 command. The published value has to be: on, off or a level in percent [0-100]. After a set there will be a status update at the status topic.
+
+* `fs20dimmer/update/xxx`:
+Can be used for changing the internal dim level without sending the FS20 command and without status-feedback. The published value has to be: on, off or a level in percent [0-100]. This might be useful in combination with openhab2. If it is possible to adjust brightnes form another source you can synchronize the dimmer here.
+
 * `fs20dimmer/connected`:
     * `0` means not connected (using a mqtt will, so this means deamon is not running at all or is not able to connect to mqtt server)
     * `1` means connected to mqtt but no connection to cul
     * `2` means connected to both, mqtt and cul
 
-* `fs20dimmer/set/xxx`:
-Can be used for changing the dim level and sending the FS20 command. The published value has to be: on, off or a level in percent [0-100].
+### example for openhab2 item
+
+```Dimmer Wohnzimmer_Sofa_Dimmer                   "Sofa Licht Dimmer"                         {mqtt="<[mosquitto:fs20dimmer/status/Sofa:command:default], >[mosquitto:fs20dimmer/update/Sofa:state:*:default]"}```
+
+As you can see mqtt publishes from fs20dimmer to openhab are handled as commands. In the other direction there are only state messages to topic update, which just influence the internal dimemr state but neither trigger a sending of a FS20 wireless telegramm nor will be acknowledged by another publish.
+I have linked this item with an Osram Lightify bulb (brightness channel). Now you can change the dim-level through the openhab webinterface and the FS20 switch. even toggle and dimupdown seems to work as expected.
 
 ### watchdog feature
 

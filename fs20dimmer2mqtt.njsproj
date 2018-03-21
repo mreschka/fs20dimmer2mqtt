@@ -28,6 +28,8 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="example-fs20-map.json" />
+    <Content Include="markus-fs20-map.json" />
     <Content Include="sample-fs20-map.json">
       <SubType>Code</SubType>
     </Content>

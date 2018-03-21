@@ -153,6 +153,9 @@ mqtt.on('connect', function () {
     log.debug('mqtt subscribe', config.name + '/set/#');
     mqtt.subscribe(config.name + '/set/#');
 
+    log.debug('mqtt subscribe', config.name + '/update/#');
+    mqtt.subscribe(config.name + '/update/#');
+
     log.debug('mqtt subscribe', config.name + '/get/#');
     mqtt.subscribe(config.name + '/get/#');
 
@@ -195,7 +198,9 @@ mqtt.on('message', (topic, payload) => {
         // Topic <name>/set/mapName
         if (topicMapInv[parts[2]]) {
             log.debug('mqtt set by mapName:', topicMapInv[parts[2]].substr(5, 4), topicMapInv[parts[2]].substr(9, 2), payload);
+
             dimmerSet(payload, topicMapInv[parts[2]]);
+
         } else {
             log.error("mqtt set by mapName, not found:", parts[2]);
         }
@@ -206,8 +211,28 @@ mqtt.on('message', (topic, payload) => {
         } else {
             log.error("error on mqtt set by PROT/ADR: ", parts[2] + "/" + parts[3]);
         }
+
         dimmerSet(payload, parts[2] + '/' + parts[3]);
-        //dimmerPublish(parts[2] + '/' + parts[3], { cmdRaw: '', cmd: '' }, null, parts[2]);
+
+    } else if (parts.length === 3 && parts[1] === 'update') {
+        // Topic <name>/set/mapName
+        if (topicMapInv[parts[2]]) {
+            log.debug('mqtt update by mapName:', topicMapInv[parts[2]].substr(5, 4), topicMapInv[parts[2]].substr(9, 2), payload);
+
+            dimmerSet(payload, topicMapInv[parts[2]], true);
+
+        } else {
+            log.error("mqtt update by mapName, not found:", parts[2]);
+        }
+    } else if (parts.length === 4 && parts[1] === 'update') {
+        // Topic <name>/set/PROT/ADR
+        if (cul.cmd('FS20', parts[3].substr(0, 4), parts[3].substr(4, 2), payload)) {
+            log.debug("mqtt update by PROT/ADR: ", parts[2] + "/" + parts[3]);
+        } else {
+            log.error("error on mqtt update by PROT/ADR: ", parts[2] + "/" + parts[3]);
+        }
+
+        dimmerSet(payload, parts[2] + '/' + parts[3], true);
 
     } else if (parts.length === 3 && parts[1] === 'get') {
         // Topic <name>/get/mapName
@@ -279,7 +304,7 @@ function dimmerPublish(address, data, rssi, device) {
     mqttPublish(topic, payload, mqttOptions);
 }
 
-function dimmerSet(command, deviceAdr) {
+function dimmerSet(command, deviceAdr, justUpdate = false) {
     command = command.toLowerCase();
     log.debug("dimmer set", deviceAdr, command);
     if (command == 'on' || command == 'off') {
@@ -301,17 +326,19 @@ function dimmerSet(command, deviceAdr) {
     }
     log.debug("dimmer set command finished", deviceAdr, command);
     if (command != '' && dim(map(deviceAdr), command, true)) {
-        if (cul.cmd('FS20', deviceAdr.substr(5, 4), deviceAdr.substr(9, 2), command)) {
-            dimmerPublish(deviceAdr, { cmdRaw: '', cmd: '' }, null, 'FS20');
-        } else {
-            log.debug('dimmer set error on cul command', 'FS20', deviceAdr.substr(5, 4), deviceAdr.substr(9, 2), command);
+        if (!justUpdate) {
+            if (cul.cmd('FS20', deviceAdr.substr(5, 4), deviceAdr.substr(9, 2), command)) {
+                setTimeout(dimmerPublish, 500, deviceAdr, { cmdRaw: '', cmd: '' }, null, 'FS20');
+            } else {
+                log.debug('dimmer set error on cul command', 'FS20', deviceAdr.substr(5, 4), deviceAdr.substr(9, 2), command);
+            }
         }
     } else {
         log.error("dimmer set error on mqtt set by mapName", deviceAdr);
     }
 }
 
-function dim(dimmer, cmd, nodupe = false) {
+function dim(dimmer, cmd, justUpdate = false) {
     log.debug('dimmer check', dimmer, cmd);
     if (!dimmerMap[dimmer]) {
         log.debug('new dimmer', dimmer, cmd);
@@ -323,7 +350,7 @@ function dim(dimmer, cmd, nodupe = false) {
         dimmerMap[dimmer].dimwait = Date.now() - 1;
     }
 
-    if ((!nodupe) && (Date.now() - dimmerMap[dimmer].ts < 120 && dimmerMap[dimmer].lastcmd === cmd)) {
+    if ((!(justUpdate)) && (Date.now() - dimmerMap[dimmer].ts < 200 && dimmerMap[dimmer].lastcmd === cmd)) {
         log.debug('dimmer duplicate, ignoring', dimmer, cmd);
         return false;
     } else {
@@ -487,8 +514,10 @@ function dim(dimmer, cmd, nodupe = false) {
             default:
         }
 
-        dimmerMap[dimmer].ts = Date.now();
-        dimmerMap[dimmer].lastcmd = cmd;
+        if (!(justUpdate)) {
+            dimmerMap[dimmer].ts = Date.now();
+            dimmerMap[dimmer].lastcmd = cmd;
+        }
         return true;
     }
 }
