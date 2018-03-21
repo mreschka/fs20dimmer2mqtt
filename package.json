@@ -1,7 +1,7 @@
 {
   "name": "fs20dimmer2mqtt",
   "private": false,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "FS20 dimmer tracker to mqtt-smarthome daemon.",
   "main": "index.js",
   "bin": {

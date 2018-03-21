@@ -6,13 +6,13 @@
 
 > A deamon for tracking FS20 dimmer commands to mqtt following the [mqtt-smarthome](https://github.com/mqtt-smarthome) architecure.
 
-Based on the idea of [mqtt-smarthome](https://github.com/mqtt-smarthome) and especially on the work of hobbyquaker [hm2mqtt.js](https://github.com/hobbyquaker/hm2mqtt.js).
+Based on the idea of [mqtt-smarthome](https://github.com/mqtt-smarthome) and especially on the work of hobbyquaker [cul2mqtt.js](https://github.com/hobbyquaker/cul2mqtt).
 
-This deamon tries to behave as ELV FS20 dimmer actuators do. Actually it's not 100% accurate, so it won't work to guess the dimlevel all the time.
+This deamon tries to behave as ELV FS20 dimmer actuators do. Actually it's not 100% accurate, so it won't work to guess the dimlevel exactly as a fs20 device would, you can't use ist in parallel.
 
-The idea was to us FS20 wall switches etc. to control other (non-FS20) dimmers light lightify or hue lamps. In my case I use openhab2 to control the lamps based on the output of this module.
+The idea was to use FS20 wall switches to control other (non-FS20) dimmers like lightify or hue lamps. In my case I use openhab2 to control the lamps based on the output of this module.
 
-Please read the --help output for commandline options. I tried to stick as close as possible to hm2mqtt.js.
+Please read the --help output for commandline options.
 
 ## Install
 
@@ -24,7 +24,7 @@ As hobbyquaker I also suggest to use pm2 to manage the fs20dimmer2mqtt process (
 
 `fs20dimmer2mqtt --help`
 
-```fs20dimmer2mqtt 0.0.1
+```fs20dimmer2mqtt 0.0.3
 FS20 dimmer tracker to mqtt-smarthome daemon.
 
 Usage: index.js [options]
@@ -65,18 +65,18 @@ Options:
 ```
 ### Examples
 
-* Simple Example, local mqtt server, no auth, np retain, watchdog on:
+* Simple Example, local mqtt server, no auth, no retain, watchdog on:
 `/usr/bin/fs20dimmer2mqtt -c telnet --cul-host 192.168.4.30 -r -w 90`
 starts the deamon, connects to cuno via telnet at `192.168.4.30` and publishes at `fs20dimmer/status/#` of the local mqtt (port 1883)
 
-* Complex Example, local mqtt server, with auth:
+* Complex Example, local mqtt server, with auth, no retain, watchdog on:
 `/usr/bin/helios2mqtt -c telnet --cul-host  192.168.4.30 --cul-port 23 -m mqtt://192.168.4.10 -u f20dimmerMqtt -p seCRe7 -s -v warn -r -w 90 --fs20-map /home/smarthome/fs20-map.json`
 starts the deamon, connects to cuno via telnet at `192.168.4.30` with poert 23 and publishes at `fs20dimmer/status/#` of the mqtt server at `192.168.4.10` using the credentials above. Published will be json strings with additional infos. Will only print warning and errors. Uses a map fs20 devices to name using the definition in home of smarthome user.
 
 ### mqtt topics
 
 * `fs20dimmer/status/xxx`:
-fs20dimmer2mqtt pushes the current dimlevel of each received FS20 device to either fs20dimmer/status/deviceNameFromMApFile or to fs20dimmer/status/FS20/123400 if device does not have a map file. You can choose using -s Option if you would like to simply have the value or a json string with more info like timestamp and explanation.
+fs20dimmer2mqtt pushes the current dimlevel of each received FS20 device to either fs20dimmer/status/deviceNameFromMapFile or to fs20dimmer/status/FS20/123400 if device does not have a map file. You can choose using -s Option if you would like to simply have the value or a json string with more info like timestamp and explanation.
 
 * `fs20dimmer/get/xxx`:
 fs20dimmer2mqtt listens to get requests here. You can request status updates for specific devices here. The response will be published as status.
@@ -85,7 +85,7 @@ fs20dimmer2mqtt listens to get requests here. You can request status updates for
 Can be used for changing the dim level and sending the FS20 command. The published value has to be: on, off or a level in percent [0-100]. After a set there will be a status update at the status topic.
 
 * `fs20dimmer/update/xxx`:
-Can be used for changing the internal dim level without sending the FS20 command and without status-feedback. The published value has to be: on, off or a level in percent [0-100]. This might be useful in combination with openhab2. If it is possible to adjust brightnes form another source you can synchronize the dimmer here.
+Can be used for changing the internal dim level without sending the FS20 command and without status-feedback. The published value has to be: on, off or a level in percent [0-100]. This is especially useful in combination with openhab2: If it is possible to adjust brightnes form another switch/webui/etc you can synchronize the dimmer here.
 
 * `fs20dimmer/connected`:
     * `0` means not connected (using a mqtt will, so this means deamon is not running at all or is not able to connect to mqtt server)
@@ -96,12 +96,12 @@ Can be used for changing the internal dim level without sending the FS20 command
 
 ```Dimmer Wohnzimmer_Sofa_Dimmer                   "Sofa Licht Dimmer"                         {mqtt="<[mosquitto:fs20dimmer/status/Sofa:command:default], >[mosquitto:fs20dimmer/update/Sofa:state:*:default]"}```
 
-As you can see mqtt publishes from fs20dimmer to openhab are handled as commands. In the other direction there are only state messages to topic update, which just influence the internal dimemr state but neither trigger a sending of a FS20 wireless telegramm nor will be acknowledged by another publish.
-I have linked this item with an Osram Lightify bulb (brightness channel). Now you can change the dim-level through the openhab webinterface and the FS20 switch. even toggle and dimupdown seems to work as expected.
+As you can see mqtt publishes from fs20dimmer to openhab are handled as commands. In the other direction there are only state messages to topic update, which just influence the internal dimmer state but neither trigger a sending of a FS20 wireless telegramm nor will be acknowledged by another publish.
+I have linked this item with an Osram Lightify bulb (brightness channel). Now you can change the dim-level through the openhab webinterface and the FS20 switch. Even toggle and dimupdown seems to work as expected.
 
 ### watchdog feature
 
-The watchdog monitors mqtt-publish activity of fs20dimmer2mqtt. I suggest using at least 60 seconds. You can turn this on in order to let fs20dimmer2mqtt exit as a last measure if all reconnect attempts fail (i.e. twice the watchdog time went by without any successful publish. Reasons could for exmaple be a problem with modbus connection to helios and no data from cul or a connection problem to mqtt server. Use witch care - you have to make sure the process gets restarted after it exits, e.g. using pm2 or similar.
+The watchdog monitors mqtt-publish activity of fs20dimmer2mqtt. I suggest using at least 60 seconds. You can turn this on in order to let fs20dimmer2mqtt exit as a last measure if all reconnect attempts fail (i.e. twice the watchdog time went by without any successful publish. Reasons could for example be a problem with connection to cul and no data from cul or a connection problem to mqtt server. Use witch care - you have to make sure the process gets restarted after it exits, e.g. using pm2 or similar.
 
 ## License
 
