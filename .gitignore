@@ -57,3 +57,7 @@ typings/
 # dotenv environment variables file
 .env
 
+/.vs
+/start.bat
+/example-fs20-map.json
+/markus-fs20-map.json

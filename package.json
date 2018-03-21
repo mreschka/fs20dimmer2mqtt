@@ -1,0 +1,42 @@
+{
+  "name": "fs20dimmer2mqtt",
+  "private": false,
+  "version": "0.0.1",
+  "description": "FS20 dimmer tracker to mqtt-smarthome daemon.",
+  "main": "index.js",
+  "bin": {
+    "fs20dimmer2mqtt": "./index.js"
+  },
+  "preferGlobal": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mreschka/fs20dimmer2mqtt"
+  },
+  "keywords": [
+    "mqtt",
+    "smarthome",
+    "cul",
+    "FS20",
+    "dimmer",
+    "elv"
+  ],
+  "author": {
+    "name": "Markus Reschka",
+    "email": "markus@reschka.com",
+    "url": "https://github.com/mreschka"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mreschka/fs20dimmer2mqtt/issues"
+  },
+  "homepage": "https://github.com/mreschka/fs20dimmer2mqtt",
+  "dependencies": {
+    "cul": "^0.8.0",
+    "mqtt": "^2.15.0",
+    "yalm": "^4.0.0",
+    "yargs": "^6.5.0"
+  }
+}
