@@ -35,7 +35,7 @@
   "homepage": "https://github.com/mreschka/fs20dimmer2mqtt",
   "dependencies": {
     "cul": "^0.17.0",
-    "mqtt": "^4.3.4",
+    "mqtt": "^5.14.1",
     "yalm": "^4.0.0",
     "yargs": "^17.3.1"
   }
